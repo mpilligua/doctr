@@ -1,5 +1,6 @@
 from doctr.io import DocumentFile
 from doctr.models import ocr_predictor
+<<<<<<< HEAD
 from doctr.utils.visualization import vis_and_synth
 import os
 
@@ -45,6 +46,30 @@ for root, dirs, files in os.walk(in_dir):
 #     print(info)
 
 # result = str(result)
+=======
+
+model = ocr_predictor(pretrained=True)
+model.to('cuda')
+# PDF
+doc = DocumentFile.from_pdf("/hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Sample documents/Certificates of no criminal records/Constancia de no antecedentes penales federales.pdf")
+# Analyze
+result = model(doc)
+
+
+# result.show()
+res = result.synthesize()
+
+# res is a np array with the image of the document
+import matplotlib.pyplot as plt
+import time 
+import numpy as np
+
+for r,info in res: 
+    plt.imsave(f"synth{time.time()}.png", r.astype(np.uint8))
+    print(info)
+
+print(result)
+>>>>>>> 87607a5100913b799d0e68f3f45ddb95da4d498b
 
 
 # import pickle
