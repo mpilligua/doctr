@@ -172,6 +172,7 @@ def visualize_page(
     scale: float = 10,
     interactive: bool = True,
     add_labels: bool = True,
+    ax = None,
     **kwargs: Any,
 ) -> Figure:
     """Visualize a full page with predicted blocks, lines and words
@@ -204,7 +205,8 @@ def visualize_page(
     # Get proper scale and aspect ratio
     h, w = image.shape[:2]
     size = (scale * w / h, scale) if h > w else (scale, h / w * scale)
-    fig, ax = plt.subplots(figsize=size)
+    if ax is None:
+        fig, ax = plt.subplots(figsize=size)
     # Display the image
     ax.imshow(image)
     # hide both axis
@@ -283,9 +285,10 @@ def visualize_page(
     if interactive:
         # Create mlp Cursor to hover patches in artists
         mplcursors.Cursor(artists, hover=2).connect("add", lambda sel: sel.annotation.set_text(sel.artist.get_label()))
-    fig.tight_layout(pad=0.0)
+    # if ax is None:
+    #     fig.tight_layout(pad=0.0)
 
-    return fig
+    # return fig
 
 
 def synthesize_page(
@@ -311,6 +314,7 @@ def synthesize_page(
     response = 255 * np.ones((h, w, 3), dtype=np.int32)
 
     # Draw each word
+    L = []
     for block in page["blocks"]:
         for line in block["lines"]:
             for word in line["words"]:
@@ -320,7 +324,8 @@ def synthesize_page(
                 ymin, ymax = int(round(h * ymin)), int(round(h * ymax))
 
                 # White drawing context adapted to font size, 0.75 factor to convert pts --> pix
-                font = get_font(font_family, int(0.75 * (ymax - ymin)))
+                size = int(0.75 * (ymax - ymin))
+                font = get_font(font_family, size)
                 img = Image.new("RGB", (xmax - xmin, ymax - ymin), color=(255, 255, 255))
                 d = ImageDraw.Draw(img)
                 # Draw in black the value of the word
@@ -341,8 +346,9 @@ def synthesize_page(
 
                 # Write to response page
                 response[ymin:ymax, xmin:xmax, :] = np.array(img)
+                L.append([xmin, ymin, xmax, ymax, word["value"], word["confidence"], size])
 
-    return response
+    return response, L
 
 
 def visualize_kie_page(
@@ -499,3 +505,35 @@ def draw_boxes(boxes: np.ndarray, image: np.ndarray, color: Optional[Tuple[int, 
         )
     plt.imshow(image)
     plt.plot(**kwargs)
+
+def vis_and_synth(page, image, **kwargs):
+    # create a subplot with 3 cols and 1 row with the original img, the visualization and the synthesis
+    fig, axs = plt.subplots(1, 3, figsize=(40, 20))
+    
+    fig1 = visualize_page(page, image, ax=axs[1])
+    fig2, L = synthesize_page(page)
+    
+    # original image
+    axs[0].imshow(image)
+    axs[0].axis('off')
+    axs[0].set_title("Original image", fontsize=40)
+    
+    # visualization
+    # axs[1].plot(fig1)
+    # axs[1].axis('off')
+    axs[1].set_title("OCR output", fontsize=40)
+    
+    # synthesis
+    axs[2].imshow(fig2.astype(np.uint8))
+    axs[2].axis('off')
+    axs[2].set_title("Reconstructed text", fontsize=40)
+    
+    fig.tight_layout()
+    plt.savefig(**kwargs)
+    
+    # save the List in a txt file
+    with open(kwargs["fname"][:-4] + ".txt", "w") as f:
+        for l in L:
+            f.write(f"{l}\n")
+    
+    return fig, L

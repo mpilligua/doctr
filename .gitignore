@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+*.out
+*.err
+*.png
+
 # C extensions
 *.so
 
@@ -138,3 +142,4 @@ wandb/
 *.pt
 *.pb
 *.index
+infer_ps2g07_35375.err
