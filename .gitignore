@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+*.out
+*.err
+*.png
+
 # C extensions
 *.so
 
@@ -138,6 +142,9 @@ wandb/
 *.pt
 *.pb
 *.index
+<<<<<<< HEAD
+infer_ps2g07_35375.err
+=======
 .gitignore
 .pre-commit-config.yaml
 CODE_OF_CONDUCT.md
@@ -418,3 +425,4 @@ tests/tensorflow/test_models_recognition_tf.py
 tests/tensorflow/test_models_utils_tf.py
 tests/tensorflow/test_models_zoo_tf.py
 tests/tensorflow/test_transforms_tf.py
+>>>>>>> 87607a5100913b799d0e68f3f45ddb95da4d498b

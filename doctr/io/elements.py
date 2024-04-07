@@ -275,7 +275,8 @@ class Page(Element):
             **kwargs: additional keyword arguments passed to the matplotlib.pyplot.show method
         """
         visualize_page(self.export(), self.page, interactive=interactive, preserve_aspect_ratio=preserve_aspect_ratio)
-        plt.show(**kwargs)
+        # plt.show(**kwargs)
+        plt.savefig(**kwargs)
 
     def synthesize(self, **kwargs) -> np.ndarray:
         """Synthesize the page from the predictions
