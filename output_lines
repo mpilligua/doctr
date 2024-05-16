@@ -9,4 +9,4 @@
 #SBATCH -e %x_%u_%j.err # File to which STDERR will be written
 #SBATCH --gres gpu:1 # Para pedir gráficas
 
-python /hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/OCR/doctr/inference.py
+python /hhome/ps2g07/document_analysis/github/Project_Synthesis2-/Code/OCR/doctr/output_lines.py

@@ -506,7 +506,69 @@ def draw_boxes(boxes: np.ndarray, image: np.ndarray, color: Optional[Tuple[int, 
     plt.imshow(image)
     plt.plot(**kwargs)
 
-def vis_and_synth(page, image, **kwargs):
+
+def synthesize_page_per_line(
+    page: Dict[str, Any],
+    draw_proba: bool = False,
+    font_family: Optional[str] = None,
+) -> np.ndarray:
+    """Draw a the content of the element page (OCR response) on a blank page.
+
+    Args:
+    ----
+        page: exported Page object to represent
+        draw_proba: if True, draw words in colors to represent confidence. Blue: p=1, red: p=0
+        font_size: size of the font, default font = 13
+        font_family: family of the font
+
+    Returns:
+    -------
+        the synthesized page
+    """
+    # Draw template
+    h, w = page["dimensions"]
+    response = 255 * np.ones((h, w, 3), dtype=np.int32)
+
+    # Draw each word
+    L = []
+    for block in page["blocks"]:
+        for line in block["lines"]:
+            for word in line["words"]:
+                # Get aboslute word geometry
+                (xmin, ymin), (xmax, ymax) = word["geometry"]
+                xmin, xmax = int(round(w * xmin)), int(round(w * xmax))
+                ymin, ymax = int(round(h * ymin)), int(round(h * ymax))
+
+                # White drawing context adapted to font size, 0.75 factor to convert pts --> pix
+                size = int(0.75 * (ymax - ymin))
+                font = get_font(font_family, size)
+                img = Image.new("RGB", (xmax - xmin, ymax - ymin), color=(255, 255, 255))
+                d = ImageDraw.Draw(img)
+                # Draw in black the value of the word
+                try:
+                    d.text((0, 0), word["value"], font=font, fill=(0, 0, 0))
+                except UnicodeEncodeError:
+                    # When character cannot be encoded, use its anyascii version
+                    d.text((0, 0), anyascii(word["value"]), font=font, fill=(0, 0, 0))
+
+                # Colorize if draw_proba
+                if draw_proba:
+                    p = int(255 * word["confidence"])
+                    mask = np.where(np.array(img) == 0, 1, 0)
+                    proba: np.ndarray = np.array([255 - p, 0, p])
+                    color = mask * proba[np.newaxis, np.newaxis, :]
+                    white_mask = 255 * (1 - mask)
+                    img = color + white_mask
+
+                # Write to response page
+                response[ymin:ymax, xmin:xmax, :] = np.array(img)
+                word["text_size"] = size
+                L.append([word, line, block])
+
+    return response, L
+
+
+def vis_and_synth_words(page, image, **kwargs):
     # create a subplot with 3 cols and 1 row with the original img, the visualization and the synthesis
     fig, axs = plt.subplots(1, 3, figsize=(40, 20))
     
@@ -537,3 +599,37 @@ def vis_and_synth(page, image, **kwargs):
             f.write(f"{l}\n")
     
     return fig, L
+
+
+
+# def vis_and_synth_lines(page, image, **kwargs):
+#     # create a subplot with 3 cols and 1 row with the original img, the visualization and the synthesis
+#     fig, axs = plt.subplots(1, 3, figsize=(40, 20))
+    
+#     fig1 = visualize_page(page, image, ax=axs[1])
+#     # fig2, L = synthesize_page(page)
+    
+#     # original image
+#     # axs[0].imshow(image)
+#     # axs[0].axis('off')
+#     # axs[0].set_title("Original image", fontsize=40)
+    
+#     # visualization
+#     # axs[1].plot(fig1)
+#     # axs[1].axis('off')
+#     # axs[1].set_title("OCR output", fontsize=40)
+    
+#     # synthesis
+#     axs[2].imshow(fig2.astype(np.uint8))
+#     axs[2].axis('off')
+#     axs[2].set_title("Reconstructed text", fontsize=40)
+    
+#     fig.tight_layout()
+#     plt.savefig(**kwargs)
+    
+#     # save the List in a txt file
+#     with open(kwargs["fname"][:-4] + ".txt", "w") as f:
+#         for l in L:
+#             f.write(f"{l}\n")
+    
+#     return fig, L
